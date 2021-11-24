@@ -1,0 +1,16 @@
+.main-template {
+  outline: 1px solid #d3caca;
+  margin: 0 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+
+@media screen and (min-width: 769px) {
+  .main-template {
+    outline: 1px solid #d3caca;
+    margin: 0 2rem 0.5rem;
+    width: 960px;
+    box-shadow: 0 0 5px;
+    grid-template-columns: 200px 1fr 1fr 1fr 1fr 150px;
+  }
+}

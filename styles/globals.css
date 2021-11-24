@@ -2,8 +2,8 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  height: 100%;
+  width: 100%;
 }
 
 a {
@@ -13,4 +13,47 @@ a {
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  height: 100vh;
+  width: 100%;
+  background-image: url("../public/assets/m1.jpg");
+  background-position: top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: #000;
+  opacity: 1;
+  transition: opacity 2s ease;
+}
+
+/* .header > div {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 2;
+  transition: opacity 2s ease;
+} */
+
+#main-one,
+#main-two,
+#main-three,
+#main-four,
+#main-five {
+  background-position: top;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+#main-two {
+  background-image: url("../public/assets/m2.jpg");
+  transition: opacity 4s ease;
+}
+
+#main-three {
+  background-image: url("../public/assets/m3.jpg");
+  transition: opacity 8s ease;
 }

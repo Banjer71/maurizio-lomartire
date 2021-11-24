@@ -1,0 +1,33 @@
+.navbar {
+  grid-column: 1;
+  color: #fff;
+  padding: 1rem;
+}
+
+.navbar h1 {
+  background-color: grey;
+  padding: 1rem;
+}
+
+.nav-menu {
+  list-style-type: none;
+  background-color: #fff;
+}
+
+.nav-menu li {
+  padding: 1rem;
+  border-top: 1px solid grey;
+  color: #000;
+  font-weight: 800;
+}
+
+.nav-menu li:hover {
+  background-color: rgb(192, 189, 189);
+  cursor: pointer;
+}
+
+.navbar-media {
+  border-top: 1px solid grey;
+  padding: 1rem;
+  background-color: #fff;
+}
