@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'   // You can use node:20 too
+        }
+    }
 
     stages {
         stage('Checkout') {
@@ -43,11 +47,7 @@ pipeline {
     }
 
     post {
-        success {
-            echo '✅ Deployment successful!'
-        }
-        failure {
-            echo '❌ Deployment failed.'
-        }
+        success { echo '✅ Deployment successful!' }
+        failure { echo '❌ Deployment failed.' }
     }
 }
