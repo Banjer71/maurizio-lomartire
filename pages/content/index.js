@@ -8,7 +8,7 @@ const Content = () => {
       <div className="text-content">
         <h2>SIDE C</h2>
         <div className="image-container">
-          <Image src={Album} alt="image" />
+          {/* <Image src={Album} alt="image" /> */}
         </div>
         <h3>Side C</h3>
         <p className="text">
