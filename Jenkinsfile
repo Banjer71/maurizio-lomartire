@@ -10,15 +10,24 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo "🛠️ Building the app..."
-                sh '''
-                export NODE_OPTIONS=--openssl-legacy-provider
-                export NEXT_DISABLE_SQUOOSH=1
-                npm install
-                npm run build
-                '''
-            }
-            }
+                    echo "🛠️ Building the app..."
+                    // Clean node_modules and lockfile to avoid caching WASM
+                    sh '''
+                        echo "Cleaning node_modules and package-lock.json..."
+                        rm -rf node_modules package-lock.json
+                    '''
+                    // Set environment variables to disable Squoosh
+                    withEnv([
+                        "NODE_OPTIONS=--openssl-legacy-provider",
+                        "NEXT_DISABLE_SQUOOSH=1"
+                    ]) {
+                        // Install dependencies
+                        sh 'npm install'
+                        // Run the Next.js build
+                        sh 'npm run build'
+                    }
+             }   
+        }
 
 
         stage('Test') {
