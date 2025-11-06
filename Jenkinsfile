@@ -1,8 +1,6 @@
 pipeline {
     agent {
-        docker {
-            image 'node:18'   // You can use node:20 too
-        }
+       agent any
     }
 
     stages {
