@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
-        DOCKER_PASS = credentials('docker-hub-creds') // Docker Hub credentials ID
+        DOCKER_USER = credentials('docker-hub-creds') // Your Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
     }
 
     stages {
@@ -30,28 +30,16 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installing npm dependencies inside Docker..."
-                // Run Node.js in Docker using host Docker
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/app \
-                    -w /app \
-                    node:18 \
-                    sh -c "npm install"
-                '''
+                echo "📦 Installing npm dependencies inside Node Docker container..."
+                // Use Node image for npm install
+                sh 'docker run --rm -v $PWD:/app -w /app node:18 npm install'
             }
         }
 
         stage('Build') {
             steps {
-                echo "🛠️ Building Next.js app inside Docker..."
-                sh '''
-                    docker run --rm \
-                    -v $PWD:/app \
-                    -w /app \
-                    node:18 \
-                    sh -c "npm run build"
-                '''
+                echo "🛠️ Building Next.js app inside Node Docker container..."
+                sh 'docker run --rm -v $PWD:/app -w /app node:18 npm run build'
             }
         }
 
@@ -64,7 +52,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "📦 Building Docker image..."
+                echo "📦 Building Docker image using host Docker..."
                 sh 'docker build -t maurizio-lomartire:latest .'
             }
         }
