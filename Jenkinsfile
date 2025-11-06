@@ -13,6 +13,7 @@ pipeline {
                 echo "🛠️ Building the app..."
                 sh '''
                 export NODE_OPTIONS=--openssl-legacy-provider
+                export NEXT_DISABLE_SQUOOSH=1
                 npm install
                 npm run build
                 '''
