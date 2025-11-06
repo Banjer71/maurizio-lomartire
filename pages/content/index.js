@@ -6,7 +6,7 @@ const Content = () => {
   return (
     <div className="content-container">
       <div className="text-content">
-        <h2>SIDE C prova 2</h2>
+        <h2>SIDE C prova 3</h2>
         <div className="image-container">
           {/* <Image src={Album} alt="image" /> */}
         </div>
