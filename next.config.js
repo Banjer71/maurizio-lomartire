@@ -4,15 +4,21 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+  // ✅ Disable image optimization (Squoosh)
   images: {
-    unoptimized: true, // ✅ disable image optimization for CI
+    unoptimized: true,
   },
+
+  // ✅ Ensure Next.js doesn’t try to use the WASM optimizer
   experimental: {
     images: {
-      allowFutureImage: true,
+      unoptimized: true,
     },
   },
+
   webpack(config) {
+    // Prevent Node modules like 'fs' from breaking in CI
     config.resolve.fallback = { fs: false };
     return config;
   },
