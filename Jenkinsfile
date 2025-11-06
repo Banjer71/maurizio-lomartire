@@ -2,50 +2,85 @@ pipeline {
     agent any
 
     environment {
-        NODE_OPTIONS = '--openssl-legacy-provider'
-        NEXT_DISABLE_SQUOOSH = '1'
+        NODE_ENV = 'production'
+        DOCKER_USER = credentials('docker-hub-creds') // the ID from above
+        DOCKER_PASS = credentials('docker-hub-creds') // same ID
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
+                echo "🔄 Checking out code..."
                 checkout scm
+            }
+        }
+
+        stage('Restore node_modules') {
+            steps {
+                echo "📂 Restoring cached node_modules (if exists)..."
+                script {
+                    if (fileExists('node_modules')) {
+                        echo "✅ node_modules cache found"
+                    } else {
+                        echo "⚠️ No cache, will install dependencies"
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo "📦 Installing npm dependencies..."
+                sh 'npm install'
+            }
+        }
+
+        stage('Save node_modules') {
+            steps {
+                echo "💾 Saving node_modules for cache..."
+                // Nothing special needed if using workspace persistence
+                echo "node_modules will persist in workspace for next build"
             }
         }
 
         stage('Build') {
             steps {
-                echo "🛠️ Building the app..."
-                sh '''
-                    rm -rf node_modules package-lock.json
-                    npm install
-                    npm run build
-                '''
+                echo "🛠️ Building Next.js app..."
+                sh 'npm run build'
             }
         }
 
-        stage('Test') {
+        stage('Check Docker') {
             steps {
-                echo "🧪 Skipping tests for now..."
+                echo "🐳 Checking Docker version..."
+                sh 'docker version'
             }
         }
 
-        stage('Package') {
+        stage('Build Docker Image') {
             steps {
-                echo "📦 Skipping Docker build for now..."
+                echo "📦 Building Docker image..."
+                sh 'docker build -t maurizio-lomartire:latest .'
             }
         }
 
-        stage('Deploy') {
+        stage('Push Docker Image') {
             steps {
-                echo "🚀 Skipping deploy for now..."
+                echo "⬆️ Pushing Docker image (if needed)..."
+                // Example: docker login + docker push
+                sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
+                sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
             }
         }
     }
 
     post {
-        always {
-            echo "Pipeline finished."
+        success {
+            echo "✅ Pipeline finished successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed."
         }
     }
 }
