@@ -10,11 +10,15 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo '🛠️ Building the app...'
-                sh 'npm install'
-                sh 'npm run build'
+                echo "🛠️ Building the app..."
+                sh '''
+                export NODE_OPTIONS=--openssl-legacy-provider
+                npm install
+                npm run build
+                '''
             }
-        }
+            }
+
 
         stage('Test') {
             steps {
