@@ -6,13 +6,13 @@ const SocialMedia = ({ icon1, icon2, icon3, alt }) => {
     <div className="social-media-wrapper">
       <ul className="social-media icon">
         <li className="media">
-          <Image src={icon1} alt={alt} />
+          <Image src={icon1} alt={alt} width={'100'} height={'100'}/>
         </li>
         <li className="media">
-          <Image src={icon2} alt={alt} />
+          <Image src={icon2} alt={alt} width={'100'} height={'100'}/>
         </li>
         <li className="media">
-          <Image src={icon3} alt={alt} />
+          <Image src={icon3} alt={alt} width={'100'} height={'100'}/>
         </li>
       </ul>
     </div>

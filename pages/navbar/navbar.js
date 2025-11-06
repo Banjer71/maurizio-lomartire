@@ -1,10 +1,15 @@
 import React from "react";
 import SocialMedia from "../social-media/index";
-import LInkedin from "../../public/assets/linkedin.png";
-import Fb from "../../public/assets/facebook.png";
-import YouTube from "../../public/assets/video.png";
+// import LInkedin from "../../public/assets/linkedin.png";
+// import Fb from "../../public/assets/facebook.png";
+// import YouTube from "../../public/assets/video.png";
 
 const Navbar = () => {
+  const Fb = "/assets/facebook.png";
+  const YouTube = "/assets/video.png";
+  const Linkedin = "/assets/linkedin.png";
+
+
   return (
     <div className="navbar">
       <h1>Maurizio Lomartire</h1>
@@ -16,7 +21,7 @@ const Navbar = () => {
         <li>Contatti</li>
       </ul>
       <div className="navbar-media">
-        <SocialMedia icon1={Fb} icon2={LInkedin} icon3={YouTube} />
+        <SocialMedia icon1={Fb} icon2={Linkedin} icon3={YouTube} />
       </div>
     </div>
   );

@@ -1,14 +1,17 @@
 import React from "react";
 import Image from "next/image";
-import Album from "../../public/assets/cd_cover.jpg";
+// import Album from "../../public/assets/cd_cover.jpg";
+
 
 const Content = () => {
+  const album = "/assets/cd_cover.jpg";
+
   return (
     <div className="content-container">
       <div className="text-content">
         <h2>SIDE C prova 3</h2>
         <div className="image-container">
-          {/* <Image src={Album} alt="image" /> */}
+          <Image src={album} alt="image" width={'100'} height={'100'}/>
         </div>
         <h3>Side C</h3>
         <p className="text">
