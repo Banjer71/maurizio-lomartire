@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // the ID from above
+        DOCKER_USER = credentials('docker-hub-creds') // the ID from Jenkins credentials
         DOCKER_PASS = credentials('docker-hub-creds') // same ID
     }
 
@@ -28,22 +28,21 @@ pipeline {
             }
         }
 
+        // Use a Node.js Docker image for these stages
         stage('Install Dependencies') {
+            agent {
+                docker { image 'node:18' }
+            }
             steps {
                 echo "📦 Installing npm dependencies..."
                 sh 'npm install'
             }
         }
 
-        stage('Save node_modules') {
-            steps {
-                echo "💾 Saving node_modules for cache..."
-                // Nothing special needed if using workspace persistence
-                echo "node_modules will persist in workspace for next build"
-            }
-        }
-
         stage('Build') {
+            agent {
+                docker { image 'node:18' }
+            }
             steps {
                 echo "🛠️ Building Next.js app..."
                 sh 'npm run build'
@@ -67,7 +66,6 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image (if needed)..."
-                // Example: docker login + docker push
                 sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
