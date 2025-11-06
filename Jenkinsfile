@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // the ID from Jenkins credentials
-        DOCKER_PASS = credentials('docker-hub-creds') // same ID
+        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds') // Docker Hub credentials ID
     }
 
     stages {
@@ -28,30 +28,36 @@ pipeline {
             }
         }
 
-        // Use a Node.js Docker image for these stages
         stage('Install Dependencies') {
-            agent {
-                docker { image 'node:18' }
-            }
             steps {
-                echo "📦 Installing npm dependencies..."
-                sh 'npm install'
+                echo "📦 Installing npm dependencies inside Docker..."
+                // Run Node.js in Docker using host Docker
+                sh '''
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    node:18 \
+                    sh -c "npm install"
+                '''
             }
         }
 
         stage('Build') {
-            agent {
-                docker { image 'node:18' }
-            }
             steps {
-                echo "🛠️ Building Next.js app..."
-                sh 'npm run build'
+                echo "🛠️ Building Next.js app inside Docker..."
+                sh '''
+                    docker run --rm \
+                    -v $PWD:/app \
+                    -w /app \
+                    node:18 \
+                    sh -c "npm run build"
+                '''
             }
         }
 
         stage('Check Docker') {
             steps {
-                echo "🐳 Checking Docker version..."
+                echo "🐳 Checking Docker version on host..."
                 sh 'docker version'
             }
         }
@@ -65,7 +71,7 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                echo "⬆️ Pushing Docker image (if needed)..."
+                echo "⬆️ Pushing Docker image to Docker Hub..."
                 sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
