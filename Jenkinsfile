@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds') // This creates DOCKER_HUB_CREDENTIALS_USR and DOCKER_HUB_CREDENTIALS_PSW
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds') // Creates _USR and _PSW vars
         NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
     }
 
@@ -26,13 +26,13 @@ pipeline {
         stage('Test Image') {
             steps {
                 echo "🧪 Verifying image was built..."
-                sh 'docker images | grep maurizio-lomartire'
+                sh 'docker images | grep maurizio-lomartire || echo "❌ Image not found!"'
             }
         }
 
         stage('Debug Credentials') {
             steps {
-                echo "Testing credentials..."
+                echo "🔍 Testing Docker credentials..."
                 sh 'echo "Username: $DOCKER_HUB_CREDENTIALS_USR"'
                 sh 'echo "Password length: $(echo $DOCKER_HUB_CREDENTIALS_PSW | wc -c)"'
             }
@@ -53,8 +53,8 @@ pipeline {
             steps {
                 echo "🧹 Cleaning up any old running containers..."
                 sh '''
-                docker rm -f nextjs-app 2>/dev/null || true
-                docker rm -f ngrok 2>/dev/null || true
+                    docker rm -f nextjs-app 2>/dev/null || true
+                    docker rm -f ngrok 2>/dev/null || true
                 '''
             }
         }
@@ -74,14 +74,14 @@ pipeline {
             steps {
                 echo "🌐 Exposing app via ngrok..."
                 sh '''
-                # Stop any existing ngrok
-                docker rm -f ngrok 2>/dev/null || true
-                
-                # Start fresh ngrok
-                docker run -d --name ngrok \
-                --link nextjs-app:http \
-                -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                wernight/ngrok ngrok http nextjs-app:3000
+                    # Stop any existing ngrok
+                    docker rm -f ngrok 2>/dev/null || true
+
+                    # Start fresh ngrok container
+                    docker run -d --name ngrok \
+                    --link nextjs-app:http \
+                    -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                    wernight/ngrok ngrok http nextjs-app:3000
                 '''
                 sh 'sleep 8'
             }
@@ -89,16 +89,17 @@ pipeline {
 
         stage('Get ngrok URL') {
             steps {
-                echo "🌐 Your public URL:"
+                echo "🌐 Fetching public URL from ngrok..."
                 sh '''
-                docker exec ngrok curl -s http://localhost:4040/api/tunnels | \
-                grep -o '"public_url":"https://[^"]*"' | \
-                head -1 | \
-                cut -d'"' -f4 || \
-                echo "Run: docker exec ngrok curl http://localhost:4040/api/tunnels"
+                    docker exec ngrok curl -s http://localhost:4040/api/tunnels | \
+                    grep -o '"public_url":"https://[^"]*"' | \
+                    head -1 | \
+                    cut -d'"' -f4 || \
+                    echo "Run manually: docker exec ngrok curl http://localhost:4040/api/tunnels"
                 '''
             }
         }
+    }
 
     post {
         success {
