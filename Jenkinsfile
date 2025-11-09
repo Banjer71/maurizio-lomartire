@@ -3,25 +3,36 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds')      // Docker Hub credentials ID
-        DOCKER_PASS = credentials('docker-hub-creds')      // Same ID
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
+        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // ngrok token stored in Jenkins
     }
 
     stages {
-        
-        // --- STAGES 1 & 2 (Clean/Checkout) REMOVED ---
-        // Jenkins performs SCM Checkout automatically before the first stage.
+        stage('Clean Workspace') {
+            steps {
+                echo "🧹 Cleaning workspace..."
+                deleteDir() // Deletes everything in the current workspace
+            }
+        }
 
-        // ===============================
-        // 1️⃣ Restore node_modules (was 3️⃣)
-        // ===============================
+        stage('Checkout') {
+            steps {
+                echo "🔄 Checking out repository..."
+                // Force a fresh Git clone to avoid workspace issues
+                checkout([$class: 'GitSCM',
+                          branches: [[name: '*/main']],
+                          doGenerateSubmoduleConfigurations: false,
+                          extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 1]],
+                          userRemoteConfigs: [[url: 'https://github.com/Banjer71/maurizio-lomartire', credentialsId: '73bf2dcd-42a6-47c5-b0b0-22cb760c982b']]
+                ])
+            }
+        }
+
         stage('Restore node_modules') {
             steps {
                 echo "📂 Restoring cached node_modules..."
                 script {
-                    // This fileExists will now check the files provided by the
-                    // automatic Declarative SCM checkout.
                     if (fileExists('node_modules')) {
                         echo "✅ node_modules cache found"
                     } else {
@@ -31,9 +42,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 2️⃣ Install dependencies (was 4️⃣)
-        // ===============================
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installing npm dependencies in Node container..."
@@ -41,9 +49,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 3️⃣ Build Next.js app (was 5️⃣)
-        // ===============================
         stage('Build') {
             steps {
                 echo "🛠️ Building Next.js app..."
@@ -51,9 +56,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 4️⃣ Check Docker (was 6️⃣)
-        // ===============================
         stage('Check Docker') {
             steps {
                 echo "🐳 Checking Docker version on host..."
@@ -61,9 +63,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 5️⃣ Build Docker image (was 7️⃣)
-        // ===============================
         stage('Build Docker Image') {
             steps {
                 echo "📦 Building Docker image..."
@@ -71,27 +70,18 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 6️⃣ Push Docker image to Docker Hub (was 8️⃣)
-        // ===============================
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
-                // NOTE: Use withCredentials for a more secure and cleaner login
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USR', passwordVariable: 'DOCKER_PSW')]) {
-                    sh "docker login -u ${env.DOCKER_USR} -p ${env.DOCKER_PSW}"
-                }
+                sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
             }
         }
 
-        // ===============================
-        // 7️⃣ Cleanup old containers (was 9️⃣)
-        // ===============================
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up old containers..."
+                echo "🧹 Cleaning up any old running containers..."
                 sh '''
                 if [ $(docker ps -aq -f name=nextjs-app) ]; then
                     docker rm -f nextjs-app
@@ -103,9 +93,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 8️⃣ Run App Container (was 10️⃣)
-        // ===============================
         stage('Run App Container') {
             steps {
                 echo "🚀 Running app container..."
@@ -113,9 +100,6 @@ pipeline {
             }
         }
 
-        // ===============================
-        // 9️⃣ Start ngrok (was 11️⃣)
-        // ===============================
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
@@ -137,35 +121,5 @@ pipeline {
         failure {
             echo "❌ Pipeline failed."
         }
-        post {
-        success {
-            echo "✅ Pipeline finished successfully!"
-        }
-        failure {
-            echo "❌ Pipeline failed."
-        }
-        // ADDED: Always run cleanup after the pipeline attempts to run
-        always {
-            // Cleanup old containers and then delete the workspace
-            stage('Cleanup All') {
-                steps {
-                    echo "🧹 Running final cleanup steps..."
-                    // 1. Clean up old Docker containers (if they were started)
-                    sh '''
-                    if [ $(docker ps -aq -f name=nextjs-app) ]; then
-                        docker rm -f nextjs-app
-                    fi
-                    if [ $(docker ps -aq -f name=ngrok) ]; then
-                        docker rm -f ngrok
-                    fi
-                    '''
-                    // 2. Delete the workspace files to ensure a fresh run next time
-                    echo "🧹 Deleting workspace files..."
-                    deleteDir() // This works correctly inside a stage/steps block
-                }
-            }
-        }
-    }
-
     }
 }
