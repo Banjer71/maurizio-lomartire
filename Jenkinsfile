@@ -13,40 +13,21 @@ pipeline {
             steps {
                 echo "📥 Code already checked out by Jenkins"
                 sh 'ls -la'
-                sh 'pwd'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                echo "📦 Installing npm dependencies in Node container..."
-                sh '''
-                    docker run --rm \
-                    -v "$(pwd)":/app \
-                    -w /app \
-                    node:18-alpine \
-                    npm install
-                '''
-            }
-        }
-
-        stage('Build') {
-            steps {
-                echo "🛠️ Building Next.js app..."
-                sh '''
-                    docker run --rm \
-                    -v "$(pwd)":/app \
-                    -w /app \
-                    node:18-alpine \
-                    npm run build
-                '''
+                sh 'cat Dockerfile'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "📦 Building Docker image..."
+                echo "📦 Building Docker image (includes npm install & build)..."
                 sh 'docker build -t maurizio-lomartire:latest .'
+            }
+        }
+
+        stage('Test Image') {
+            steps {
+                echo "🧪 Verifying image was built..."
+                sh 'docker images | grep maurizio-lomartire'
             }
         }
 
@@ -63,12 +44,8 @@ pipeline {
             steps {
                 echo "🧹 Cleaning up any old running containers..."
                 sh '''
-                if [ $(docker ps -aq -f name=nextjs-app) ]; then
-                    docker rm -f nextjs-app
-                fi
-                if [ $(docker ps -aq -f name=ngrok) ]; then
-                    docker rm -f ngrok
-                fi
+                docker rm -f nextjs-app 2>/dev/null || true
+                docker rm -f ngrok 2>/dev/null || true
                 '''
             }
         }
@@ -78,8 +55,9 @@ pipeline {
                 echo "🚀 Running app container..."
                 sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
                 sh 'sleep 5'
-                sh 'docker ps | grep nextjs-app || echo "Container not running!"'
-                echo "✅ App should be running on port 3000"
+                sh 'docker ps | grep nextjs-app'
+                sh 'docker logs nextjs-app'
+                echo "✅ App running on port 3000"
             }
         }
 
@@ -92,8 +70,20 @@ pipeline {
                 -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
                 wernight/ngrok ngrok http 3000
                 '''
-                sh 'sleep 3'
+                sh 'sleep 5'
+                sh 'docker logs ngrok'
                 echo "🌐 Visit http://localhost:4040 to see ngrok public URL"
+            }
+        }
+
+        stage('Get ngrok URL') {
+            steps {
+                echo "🌐 Fetching ngrok public URL..."
+                sh '''
+                echo "Waiting for ngrok to start..."
+                sleep 3
+                curl -s http://localhost:4040/api/tunnels | grep -o "https://[a-z0-9-]*.ngrok-free.app" | head -1 || echo "URL not ready yet, check http://localhost:4040"
+                '''
             }
         }
     }
@@ -102,9 +92,12 @@ pipeline {
         success {
             echo "✅ Pipeline finished successfully!"
             echo "🌐 Check ngrok dashboard: http://localhost:4040"
+            echo "📱 Your app is now public via ngrok!"
         }
         failure {
             echo "❌ Pipeline failed."
+            sh 'docker logs nextjs-app 2>/dev/null || echo "No app logs"'
+            sh 'docker logs ngrok 2>/dev/null || echo "No ngrok logs"'
         }
     }
 }
