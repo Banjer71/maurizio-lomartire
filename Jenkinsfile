@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // Your Docker Hub credentials ID
+        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
         DOCKER_PASS = credentials('docker-hub-creds') // Same ID
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
     }
 
     stages {
@@ -30,15 +31,14 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installing npm dependencies inside Node Docker container..."
-                // Use Node image for npm install
+                echo "📦 Installing npm dependencies in Node container..."
                 sh 'docker run --rm -v $PWD:/app -w /app node:18 npm install'
             }
         }
 
         stage('Build') {
             steps {
-                echo "🛠️ Building Next.js app inside Node Docker container..."
+                echo "🛠️ Building Next.js app..."
                 sh 'docker run --rm -v $PWD:/app -w /app node:18 npm run build'
             }
         }
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                echo "📦 Building Docker image using host Docker..."
+                echo "📦 Building Docker image..."
                 sh 'docker build -t maurizio-lomartire:latest .'
             }
         }
@@ -63,6 +63,40 @@ pipeline {
                 sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
+            }
+        }
+
+        stage('Cleanup Old Containers') {
+            steps {
+                echo "🧹 Cleaning up any old running containers..."
+                sh '''
+                if [ $(docker ps -aq -f name=nextjs-app) ]; then
+                    docker rm -f nextjs-app
+                fi
+                if [ $(docker ps -aq -f name=ngrok) ]; then
+                    docker rm -f ngrok
+                fi
+                '''
+            }
+        }
+
+        stage('Run App Container') {
+            steps {
+                echo "🚀 Running app container..."
+                sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
+            }
+        }
+
+        stage('Start ngrok') {
+            steps {
+                echo "🌐 Exposing app via ngrok..."
+                sh '''
+                docker run -d --name ngrok \
+                --network host \
+                -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                wernight/ngrok ngrok http 3000
+                '''
+                sh 'echo "Visit http://localhost:4040 to see ngrok public URL"'
             }
         }
     }
