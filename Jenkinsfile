@@ -5,7 +5,7 @@ pipeline {
         NODE_ENV = 'production'
         DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
         DOCKER_PASS = credentials('docker-hub-creds') // Same ID
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // ngrok token stored in Jenkins
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
     }
 
     stages {
@@ -29,20 +29,6 @@ pipeline {
             }
         }
 
-        stage('Check Docker') {
-            steps {
-                echo "🐳 Checking Docker availability..."
-                script {
-                    try {
-                        sh 'docker version'
-                        echo "✅ Docker is available"
-                    } catch (err) {
-                        error "❌ Docker is not available. Please fix permissions or install Docker in Jenkins."
-                    }
-                }
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installing npm dependencies in Node container..."
@@ -57,6 +43,13 @@ pipeline {
             }
         }
 
+        stage('Check Docker') {
+            steps {
+                echo "🐳 Checking Docker version on host..."
+                sh 'docker version'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 echo "📦 Building Docker image..."
@@ -67,20 +60,17 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
-                sh '''
-                docker login -u $DOCKER_USER -p $DOCKER_PASS
-                docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest
-                docker push $DOCKER_USER/maurizio-lomartire:latest
-                '''
+                sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
+                sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
             }
         }
 
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up old containers..."
+                echo "🧹 Cleaning up any old running containers..."
                 sh '''
-                docker ps -aq -f name=nextjs-app | grep . && docker rm -f nextjs-app || echo "No nextjs-app container to remove"
-                docker ps -aq -f name=ngrok | grep . && docker rm -f ngrok || echo "No ngrok container to remove"
+                docker rm -f nextjs-app ngrok || true
                 '''
             }
         }
@@ -95,6 +85,7 @@ pipeline {
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
+                // Linux host-friendly ngrok
                 sh '''
                 docker run -d --name ngrok \
                 --network host \
@@ -111,7 +102,7 @@ pipeline {
             echo "✅ Pipeline finished successfully!"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs for errors."
+            echo "❌ Pipeline failed."
         }
     }
 }
