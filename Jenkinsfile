@@ -137,5 +137,9 @@ pipeline {
         failure {
             echo "❌ Pipeline failed."
         }
+        cleanup { // The cleanup block runs regardless of build success/failure
+            echo "🧹 Cleaning up workspace to save disk space..."
+            deleteDir() // Safe to delete here, as Git operations are done
+        }
     }
 }
