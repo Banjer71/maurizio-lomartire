@@ -38,6 +38,7 @@ pipeline {
 
         stage('Build') {
             steps {
+                cleanWs()
                 echo "🛠️ Building Next.js app..."
                 sh 'docker run --rm -v $PWD:/app -w /app node:18 npm run build'
             }
