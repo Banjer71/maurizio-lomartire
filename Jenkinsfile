@@ -3,24 +3,22 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds')
-        DOCKER_PASS = credentials('docker-hub-creds')
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
+        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
     }
 
     stages {
         stage('Clean Workspace') {
             steps {
                 echo "🧹 Cleaning workspace..."
-                deleteDir() // remove all files in current workspace
+                deleteDir() // This deletes everything in the current workspace
             }
         }
 
-        // **No Checkout stage here**: Jenkins already checked out repo to run Jenkinsfile
-
         stage('Restore node_modules') {
             steps {
-                echo "📂 Restoring cached node_modules..."
+                echo "📂 Restoring cached node_modules (if exists)..."
                 script {
                     if (fileExists('node_modules')) {
                         echo "✅ node_modules cache found"
@@ -70,7 +68,7 @@ pipeline {
 
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up old containers..."
+                echo "🧹 Cleaning up any old running containers..."
                 sh '''
                 if [ $(docker ps -aq -f name=nextjs-app) ]; then
                     docker rm -f nextjs-app
