@@ -3,29 +3,33 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
-        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
+        DOCKER_USER = credentials('docker-hub-creds')
+        DOCKER_PASS = credentials('docker-hub-creds')
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
     }
 
     stages {
         stage('Clean Workspace') {
             steps {
                 echo "🧹 Cleaning workspace..."
-                deleteDir() // This deletes everything in the current workspace
+                cleanWs() // Clean workspace before starting
             }
         }
 
-        stage('Restore node_modules') {
+        stage('Checkout') {
             steps {
-                echo "📂 Restoring cached node_modules (if exists)..."
-                script {
-                    if (fileExists('node_modules')) {
-                        echo "✅ node_modules cache found"
-                    } else {
-                        echo "⚠️ No cache, will install dependencies"
-                    }
-                }
+                echo "📥 Checking out code from GitHub..."
+                checkout scm
+                // Or explicitly:
+                // git branch: 'main', url: 'https://github.com/Banjer71/maurizio-lomartire.git'
+            }
+        }
+
+        stage('Verify Code') {
+            steps {
+                echo "📂 Verifying code checkout..."
+                sh 'ls -la'
+                sh 'pwd'
             }
         }
 
@@ -38,7 +42,6 @@ pipeline {
 
         stage('Build') {
             steps {
-                cleanWs()
                 echo "🛠️ Building Next.js app..."
                 sh 'docker run --rm -v $PWD:/app -w /app node:18 npm run build'
             }
@@ -61,7 +64,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
-                sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
             }
@@ -85,6 +88,10 @@ pipeline {
             steps {
                 echo "🚀 Running app container..."
                 sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
+                
+                // Wait for app to start
+                sh 'sleep 5'
+                echo "✅ App should be running on port 3000"
             }
         }
 
@@ -97,7 +104,9 @@ pipeline {
                 -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
                 wernight/ngrok ngrok http 3000
                 '''
-                sh 'echo "Visit http://localhost:4040 to see ngrok public URL"'
+                
+                sh 'sleep 3'
+                echo "🌐 Visit http://localhost:4040 to see ngrok public URL"
             }
         }
     }
@@ -105,6 +114,7 @@ pipeline {
     post {
         success {
             echo "✅ Pipeline finished successfully!"
+            echo "🌐 Check ngrok dashboard: http://localhost:4040"
         }
         failure {
             echo "❌ Pipeline failed."
