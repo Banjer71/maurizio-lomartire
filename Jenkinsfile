@@ -3,23 +3,26 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
-        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
+        DOCKER_USER = credentials('docker-hub-creds')
+        DOCKER_PASS = credentials('docker-hub-creds')
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
     }
 
     stages {
         stage('Clean Workspace') {
             steps {
                 echo "🧹 Cleaning workspace..."
-                deleteDir() // This deletes everything in the current workspace
+                deleteDir() // Deletes everything in the workspace
             }
         }
 
         stage('Checkout') {
             steps {
                 echo "🔄 Checking out code..."
-                checkout scm
+                // Explicitly clone the repo to avoid git errors
+                git branch: 'main',
+                    url: 'https://github.com/Banjer71/maurizio-lomartire.git',
+                    credentialsId: '73bf2dcd-42a6-47c5-b0b0-22cb760c982b'
             }
         }
 
