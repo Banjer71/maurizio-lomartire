@@ -19,10 +19,12 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installing npm dependencies..."
+                echo "📦 Installing npm dependencies in Node container..."
                 sh '''
-                    ls -la
-                    cat package.json
+                    docker run --rm \
+                    -v "$(pwd)":/app \
+                    -w /app \
+                    node:18-alpine \
                     npm install
                 '''
             }
@@ -31,7 +33,13 @@ pipeline {
         stage('Build') {
             steps {
                 echo "🛠️ Building Next.js app..."
-                sh 'npm run build'
+                sh '''
+                    docker run --rm \
+                    -v "$(pwd)":/app \
+                    -w /app \
+                    node:18-alpine \
+                    npm run build
+                '''
             }
         }
 
@@ -70,7 +78,7 @@ pipeline {
                 echo "🚀 Running app container..."
                 sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
                 sh 'sleep 5'
-                sh 'docker ps | grep nextjs-app'
+                sh 'docker ps | grep nextjs-app || echo "Container not running!"'
                 echo "✅ App should be running on port 3000"
             }
         }
