@@ -9,6 +9,13 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                echo "🧹 Cleaning workspace..."
+                deleteDir() // This deletes everything in the current workspace
+            }
+        }
+
         stage('Checkout') {
             steps {
                 echo "🔄 Checking out code..."
@@ -18,7 +25,7 @@ pipeline {
 
         stage('Restore node_modules') {
             steps {
-                echo "📂 Restoring cached node_modules..."
+                echo "📂 Restoring cached node_modules (if exists)..."
                 script {
                     if (fileExists('node_modules')) {
                         echo "✅ node_modules cache found"
@@ -70,7 +77,12 @@ pipeline {
             steps {
                 echo "🧹 Cleaning up any old running containers..."
                 sh '''
-                docker rm -f nextjs-app ngrok || true
+                if [ $(docker ps -aq -f name=nextjs-app) ]; then
+                    docker rm -f nextjs-app
+                fi
+                if [ $(docker ps -aq -f name=ngrok) ]; then
+                    docker rm -f ngrok
+                fi
                 '''
             }
         }
@@ -85,7 +97,6 @@ pipeline {
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
-                // Linux host-friendly ngrok
                 sh '''
                 docker run -d --name ngrok \
                 --network host \
