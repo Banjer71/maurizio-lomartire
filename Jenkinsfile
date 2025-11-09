@@ -137,9 +137,35 @@ pipeline {
         failure {
             echo "❌ Pipeline failed."
         }
-        cleanup { // The cleanup block runs regardless of build success/failure
-            echo "🧹 Cleaning up workspace to save disk space..."
-            deleteDir() // Safe to delete here, as Git operations are done
+        post {
+        success {
+            echo "✅ Pipeline finished successfully!"
         }
+        failure {
+            echo "❌ Pipeline failed."
+        }
+        // ADDED: Always run cleanup after the pipeline attempts to run
+        always {
+            // Cleanup old containers and then delete the workspace
+            stage('Cleanup All') {
+                steps {
+                    echo "🧹 Running final cleanup steps..."
+                    // 1. Clean up old Docker containers (if they were started)
+                    sh '''
+                    if [ $(docker ps -aq -f name=nextjs-app) ]; then
+                        docker rm -f nextjs-app
+                    fi
+                    if [ $(docker ps -aq -f name=ngrok) ]; then
+                        docker rm -f ngrok
+                    fi
+                    '''
+                    // 2. Delete the workspace files to ensure a fresh run next time
+                    echo "🧹 Deleting workspace files..."
+                    deleteDir() // This works correctly inside a stage/steps block
+                }
+            }
+        }
+    }
+
     }
 }
