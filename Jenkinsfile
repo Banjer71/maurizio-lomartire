@@ -3,32 +3,46 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds') // Docker Hub credentials ID
-        DOCKER_PASS = credentials('docker-hub-creds') // Same ID
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // ngrok token stored in Jenkins
+        DOCKER_USER = credentials('docker-hub-creds')      // Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds')      // Same ID
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                echo "🧹 Cleaning workspace..."
-                deleteDir() // Deletes everything in the current workspace
-            }
-        }
 
+        // ===============================
+        // 1️⃣ Checkout repository (MOVED UP)
+        // ===============================
         stage('Checkout') {
             steps {
                 echo "🔄 Checking out repository..."
-                // Force a fresh Git clone to avoid workspace issues
-                checkout([$class: 'GitSCM',
-                          branches: [[name: '*/main']],
-                          doGenerateSubmoduleConfigurations: false,
-                          extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 1]],
-                          userRemoteConfigs: [[url: 'https://github.com/Banjer71/maurizio-lomartire', credentialsId: '73bf2dcd-42a6-47c5-b0b0-22cb760c982b']]
-                ])
+                // The declarative SCM checkout is already performed at the start
+                // but this step ensures the workspace is populated if the initial
+                // Declarative: Checkout SCM failed, or if running inside a stage.
+                // We keep it for consistency with your original file structure.
+                checkout scm
             }
         }
 
+        // ===============================
+        // 2️⃣ Clean Workspace (MODIFIED/REMOVED)
+        // ===============================
+        stage('Clean Workspace') {
+            steps {
+                // IMPORTANT: deleteDir() REMOVED.
+                // The initial 'Declarative: Checkout SCM' and your 'Checkout' stage
+                // now establish the Git context before any cleanup.
+                echo "🧹 Workspace checked out and ready."
+                // If you must clean files *after* checkout but before building, use
+                // 'sh 'rm -rf *'' here, but it's usually not necessary.
+            }
+        }
+
+        // ... all subsequent stages remain the same ...
+
+        // ===============================
+        // 3️⃣ Restore node_modules (if cached)
+        // ===============================
         stage('Restore node_modules') {
             steps {
                 echo "📂 Restoring cached node_modules..."
@@ -42,6 +56,13 @@ pipeline {
             }
         }
 
+        // ...
+        // (Stages 4 through 11 follow here)
+        // ...
+        
+        // ===============================
+        // 4️⃣ Install dependencies
+        // ===============================
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installing npm dependencies in Node container..."
@@ -49,6 +70,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 5️⃣ Build Next.js app
+        // ===============================
         stage('Build') {
             steps {
                 echo "🛠️ Building Next.js app..."
@@ -56,6 +80,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 6️⃣ Check Docker
+        // ===============================
         stage('Check Docker') {
             steps {
                 echo "🐳 Checking Docker version on host..."
@@ -63,6 +90,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 7️⃣ Build Docker image
+        // ===============================
         stage('Build Docker Image') {
             steps {
                 echo "📦 Building Docker image..."
@@ -70,6 +100,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 8️⃣ Push Docker image to Docker Hub
+        // ===============================
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
@@ -79,9 +112,12 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 9️⃣ Cleanup old containers
+        // ===============================
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up any old running containers..."
+                echo "🧹 Cleaning up old containers..."
                 sh '''
                 if [ $(docker ps -aq -f name=nextjs-app) ]; then
                     docker rm -f nextjs-app
@@ -93,6 +129,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 🔟 Run Next.js app container
+        // ===============================
         stage('Run App Container') {
             steps {
                 echo "🚀 Running app container..."
@@ -100,6 +139,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 1️⃣1️⃣ Start ngrok to expose app
+        // ===============================
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
