@@ -9,27 +9,11 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                echo "🧹 Cleaning workspace..."
-                cleanWs() // Clean workspace before starting
-            }
-        }
-
         stage('Checkout') {
             steps {
-                echo "📥 Checking out code from GitHub..."
-                checkout scm
-                // Or explicitly:
-                // git branch: 'main', url: 'https://github.com/Banjer71/maurizio-lomartire.git'
-            }
-        }
-
-        stage('Verify Code') {
-            steps {
-                echo "📂 Verifying code checkout..."
+                echo "📥 Code already checked out by Jenkins"
                 sh 'ls -la'
-                sh 'pwd'
+                sh 'git status'
             }
         }
 
@@ -118,6 +102,9 @@ pipeline {
         }
         failure {
             echo "❌ Pipeline failed."
+        }
+        always {
+            echo "🧹 Workspace will be cleaned on next build"
         }
     }
 }
