@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds')
-        DOCKER_PASS = credentials('docker-hub-creds')
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds') // This creates DOCKER_HUB_CREDENTIALS_USR and DOCKER_HUB_CREDENTIALS_PSW
         NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
     }
 
@@ -31,12 +30,22 @@ pipeline {
             }
         }
 
+        stage('Debug Credentials') {
+            steps {
+                echo "Testing credentials..."
+                sh 'echo "Username: $DOCKER_HUB_CREDENTIALS_USR"'
+                sh 'echo "Password length: $(echo $DOCKER_HUB_CREDENTIALS_PSW | wc -c)"'
+            }
+        }
+
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
-                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
-                sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
+                sh '''
+                    echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin
+                    docker tag maurizio-lomartire:latest $DOCKER_HUB_CREDENTIALS_USR/maurizio-lomartire:latest
+                    docker push $DOCKER_HUB_CREDENTIALS_USR/maurizio-lomartire:latest
+                '''
             }
         }
 
