@@ -9,44 +9,19 @@ pipeline {
     }
 
     stages {
+        
+        // --- STAGES 1 & 2 (Clean/Checkout) REMOVED ---
+        // Jenkins performs SCM Checkout automatically before the first stage.
 
         // ===============================
-        // 1️⃣ Checkout repository (MOVED UP)
-        // ===============================
-        stage('Checkout') {
-            steps {
-                echo "🔄 Checking out repository..."
-                // The declarative SCM checkout is already performed at the start
-                // but this step ensures the workspace is populated if the initial
-                // Declarative: Checkout SCM failed, or if running inside a stage.
-                // We keep it for consistency with your original file structure.
-                checkout scm
-            }
-        }
-
-        // ===============================
-        // 2️⃣ Clean Workspace (MODIFIED/REMOVED)
-        // ===============================
-        stage('Clean Workspace') {
-            steps {
-                // IMPORTANT: deleteDir() REMOVED.
-                // The initial 'Declarative: Checkout SCM' and your 'Checkout' stage
-                // now establish the Git context before any cleanup.
-                echo "🧹 Workspace checked out and ready."
-                // If you must clean files *after* checkout but before building, use
-                // 'sh 'rm -rf *'' here, but it's usually not necessary.
-            }
-        }
-
-        // ... all subsequent stages remain the same ...
-
-        // ===============================
-        // 3️⃣ Restore node_modules (if cached)
+        // 1️⃣ Restore node_modules (was 3️⃣)
         // ===============================
         stage('Restore node_modules') {
             steps {
                 echo "📂 Restoring cached node_modules..."
                 script {
+                    // This fileExists will now check the files provided by the
+                    // automatic Declarative SCM checkout.
                     if (fileExists('node_modules')) {
                         echo "✅ node_modules cache found"
                     } else {
@@ -56,12 +31,8 @@ pipeline {
             }
         }
 
-        // ...
-        // (Stages 4 through 11 follow here)
-        // ...
-        
         // ===============================
-        // 4️⃣ Install dependencies
+        // 2️⃣ Install dependencies (was 4️⃣)
         // ===============================
         stage('Install Dependencies') {
             steps {
@@ -71,7 +42,7 @@ pipeline {
         }
 
         // ===============================
-        // 5️⃣ Build Next.js app
+        // 3️⃣ Build Next.js app (was 5️⃣)
         // ===============================
         stage('Build') {
             steps {
@@ -81,7 +52,7 @@ pipeline {
         }
 
         // ===============================
-        // 6️⃣ Check Docker
+        // 4️⃣ Check Docker (was 6️⃣)
         // ===============================
         stage('Check Docker') {
             steps {
@@ -91,7 +62,7 @@ pipeline {
         }
 
         // ===============================
-        // 7️⃣ Build Docker image
+        // 5️⃣ Build Docker image (was 7️⃣)
         // ===============================
         stage('Build Docker Image') {
             steps {
@@ -101,19 +72,22 @@ pipeline {
         }
 
         // ===============================
-        // 8️⃣ Push Docker image to Docker Hub
+        // 6️⃣ Push Docker image to Docker Hub (was 8️⃣)
         // ===============================
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
-                sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                // NOTE: Use withCredentials for a more secure and cleaner login
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USR', passwordVariable: 'DOCKER_PSW')]) {
+                    sh "docker login -u ${env.DOCKER_USR} -p ${env.DOCKER_PSW}"
+                }
                 sh 'docker tag maurizio-lomartire:latest $DOCKER_USER/maurizio-lomartire:latest'
                 sh 'docker push $DOCKER_USER/maurizio-lomartire:latest'
             }
         }
 
         // ===============================
-        // 9️⃣ Cleanup old containers
+        // 7️⃣ Cleanup old containers (was 9️⃣)
         // ===============================
         stage('Cleanup Old Containers') {
             steps {
@@ -130,7 +104,7 @@ pipeline {
         }
 
         // ===============================
-        // 🔟 Run Next.js app container
+        // 8️⃣ Run App Container (was 10️⃣)
         // ===============================
         stage('Run App Container') {
             steps {
@@ -140,7 +114,7 @@ pipeline {
         }
 
         // ===============================
-        // 1️⃣1️⃣ Start ngrok to expose app
+        // 9️⃣ Start ngrok (was 11️⃣)
         // ===============================
         stage('Start ngrok') {
             steps {
