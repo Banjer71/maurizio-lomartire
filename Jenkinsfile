@@ -71,34 +71,34 @@ pipeline {
         }
 
         stage('Start ngrok') {
-    steps {
-        echo "🌐 Exposing app via ngrok..."
-        sh '''
-        # Stop any existing ngrok
-        docker rm -f ngrok 2>/dev/null || true
-        
-        # Start fresh ngrok
-        docker run -d --name ngrok \
-        --link nextjs-app:http \
-        -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-        wernight/ngrok ngrok http nextjs-app:3000
-        '''
-        sh 'sleep 8'
-    }
-}
+            steps {
+                echo "🌐 Exposing app via ngrok..."
+                sh '''
+                # Stop any existing ngrok
+                docker rm -f ngrok 2>/dev/null || true
+                
+                # Start fresh ngrok
+                docker run -d --name ngrok \
+                --link nextjs-app:http \
+                -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                wernight/ngrok ngrok http nextjs-app:3000
+                '''
+                sh 'sleep 8'
+            }
+        }
 
-stage('Get ngrok URL') {
-    steps {
-        echo "🌐 Your public URL:"
-        sh '''
-        docker exec ngrok curl -s http://localhost:4040/api/tunnels | \
-        grep -o '"public_url":"https://[^"]*"' | \
-        head -1 | \
-        cut -d'"' -f4 || \
-        echo "Run: docker exec ngrok curl http://localhost:4040/api/tunnels"
-        '''
-    }
-}
+        stage('Get ngrok URL') {
+            steps {
+                echo "🌐 Your public URL:"
+                sh '''
+                docker exec ngrok curl -s http://localhost:4040/api/tunnels | \
+                grep -o '"public_url":"https://[^"]*"' | \
+                head -1 | \
+                cut -d'"' -f4 || \
+                echo "Run: docker exec ngrok curl http://localhost:4040/api/tunnels"
+                '''
+            }
+        }
 
     post {
         success {
