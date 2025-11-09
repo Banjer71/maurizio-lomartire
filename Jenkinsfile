@@ -13,28 +13,25 @@ pipeline {
             steps {
                 echo "📥 Code already checked out by Jenkins"
                 sh 'ls -la'
-                sh 'git status'
+                sh 'pwd'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "📦 Installing npm dependencies in Node container..."
-                sh 'docker run --rm -v $PWD:/app -w /app node:18 npm install'
+                echo "📦 Installing npm dependencies..."
+                sh '''
+                    ls -la
+                    cat package.json
+                    npm install
+                '''
             }
         }
 
         stage('Build') {
             steps {
                 echo "🛠️ Building Next.js app..."
-                sh 'docker run --rm -v $PWD:/app -w /app node:18 npm run build'
-            }
-        }
-
-        stage('Check Docker') {
-            steps {
-                echo "🐳 Checking Docker version on host..."
-                sh 'docker version'
+                sh 'npm run build'
             }
         }
 
@@ -72,9 +69,8 @@ pipeline {
             steps {
                 echo "🚀 Running app container..."
                 sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
-                
-                // Wait for app to start
                 sh 'sleep 5'
+                sh 'docker ps | grep nextjs-app'
                 echo "✅ App should be running on port 3000"
             }
         }
@@ -88,7 +84,6 @@ pipeline {
                 -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
                 wernight/ngrok ngrok http 3000
                 '''
-                
                 sh 'sleep 3'
                 echo "🌐 Visit http://localhost:4040 to see ngrok public URL"
             }
@@ -102,9 +97,6 @@ pipeline {
         }
         failure {
             echo "❌ Pipeline failed."
-        }
-        always {
-            echo "🧹 Workspace will be cleaned on next build"
         }
     }
 }
