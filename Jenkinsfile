@@ -3,32 +3,39 @@ pipeline {
 
     environment {
         NODE_ENV = 'production'
-        DOCKER_USER = credentials('docker-hub-creds')
-        DOCKER_PASS = credentials('docker-hub-creds')
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
+        DOCKER_USER = credentials('docker-hub-creds')      // Docker Hub credentials ID
+        DOCKER_PASS = credentials('docker-hub-creds')      // Same ID
+        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token') // store ngrok token in Jenkins
     }
 
     stages {
+
+        // ===============================
+        // 1️⃣ Clean Workspace
+        // ===============================
         stage('Clean Workspace') {
             steps {
                 echo "🧹 Cleaning workspace..."
-                deleteDir() // Deletes everything in the workspace
+                deleteDir() // removes all files, ensures fresh checkout
             }
         }
 
+        // ===============================
+        // 2️⃣ Checkout repository
+        // ===============================
         stage('Checkout') {
             steps {
-                echo "🔄 Checking out code..."
-                // Explicitly clone the repo to avoid git errors
-                git branch: 'main',
-                    url: 'https://github.com/Banjer71/maurizio-lomartire.git',
-                    credentialsId: '73bf2dcd-42a6-47c5-b0b0-22cb760c982b'
+                echo "🔄 Checking out repository..."
+                checkout scm
             }
         }
 
+        // ===============================
+        // 3️⃣ Restore node_modules (if cached)
+        // ===============================
         stage('Restore node_modules') {
             steps {
-                echo "📂 Restoring cached node_modules (if exists)..."
+                echo "📂 Restoring cached node_modules..."
                 script {
                     if (fileExists('node_modules')) {
                         echo "✅ node_modules cache found"
@@ -39,6 +46,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 4️⃣ Install dependencies
+        // ===============================
         stage('Install Dependencies') {
             steps {
                 echo "📦 Installing npm dependencies in Node container..."
@@ -46,6 +56,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 5️⃣ Build Next.js app
+        // ===============================
         stage('Build') {
             steps {
                 echo "🛠️ Building Next.js app..."
@@ -53,6 +66,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 6️⃣ Check Docker
+        // ===============================
         stage('Check Docker') {
             steps {
                 echo "🐳 Checking Docker version on host..."
@@ -60,6 +76,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 7️⃣ Build Docker image
+        // ===============================
         stage('Build Docker Image') {
             steps {
                 echo "📦 Building Docker image..."
@@ -67,6 +86,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 8️⃣ Push Docker image to Docker Hub
+        // ===============================
         stage('Push Docker Image') {
             steps {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
@@ -76,9 +98,12 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 9️⃣ Cleanup old containers
+        // ===============================
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up any old running containers..."
+                echo "🧹 Cleaning up old containers..."
                 sh '''
                 if [ $(docker ps -aq -f name=nextjs-app) ]; then
                     docker rm -f nextjs-app
@@ -90,6 +115,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 🔟 Run Next.js app container
+        // ===============================
         stage('Run App Container') {
             steps {
                 echo "🚀 Running app container..."
@@ -97,6 +125,9 @@ pipeline {
             }
         }
 
+        // ===============================
+        // 1️⃣1️⃣ Start ngrok to expose app
+        // ===============================
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
