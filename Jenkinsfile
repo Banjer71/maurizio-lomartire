@@ -5,22 +5,25 @@ pipeline {
         NODE_ENV = 'production'
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds') // Creates _USR and _PSW vars
         NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
+        IMAGE_NAME = "maurizio-lomartire"
+        FULL_IMAGE = "${DOCKER_HUB_CREDENTIALS_USR}/maurizio-lomartire:latest"
     }
 
     stages {
-        //this stage can be removed after the first good installation
-        // stage('Checkout') {
-        //     steps {
-        //         echo "📥 Code already checked out by Jenkins"
-        //         sh 'ls -la'
-        //         sh 'cat Dockerfile'
-        //     }
-        // }
+        
+        stage('Checkout') {
+            steps {
+                echo "⬆️ Pushing image to Docker Hub..."
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
-                echo "📦 Building Docker image (includes npm install & build)..."
-                sh 'docker build -t maurizio-lomartire:latest .'
+                echo "📦 Building Docker image (Docker caching applied)..."
+                sh """
+                    docker build --pull --no-cache=false -t $IMAGE_NAME .
+                """
+                }
             }
         }
 
@@ -44,15 +47,14 @@ pipeline {
                 echo "⬆️ Pushing Docker image to Docker Hub..."
                 sh '''
                     echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin
-                    docker tag maurizio-lomartire:latest $DOCKER_HUB_CREDENTIALS_USR/maurizio-lomartire:latest
-                    docker push $DOCKER_HUB_CREDENTIALS_USR/maurizio-lomartire:latest
+                    docker tag $IMAGE_NAME $FULL_IMAGE
+                    docker push $FULL_IMAGE
                 '''
             }
         }
 
         stage('Cleanup Old Containers') {
             steps {
-                echo "🧹 Cleaning up any old running containers..."
                 sh '''
                     docker rm -f nextjs-app 2>/dev/null || true
                     docker rm -f ngrok 2>/dev/null || true
@@ -62,29 +64,29 @@ pipeline {
 
         stage('Run App Container') {
             steps {
-                echo "🚀 Running app container..."
-                sh 'docker run -d --name nextjs-app -p 3000:3000 maurizio-lomartire:latest'
-                sh 'sleep 5'
-                sh 'docker ps | grep nextjs-app'
-                sh 'docker logs nextjs-app'
-                echo "✅ App running on port 3000"
+                echo "🚀 Starting latest app container..."
+                sh """
+                    docker run -d --name nextjs-app -p 3000:3000 $IMAGE_NAME
+                """
+                sleep 5
             }
         }
 
         stage('Start ngrok') {
             steps {
                 echo "🌐 Exposing app via ngrok..."
-                sh '''
-                    # Stop any existing ngrok
+                steps {
+                echo "🌍 Starting ngrok tunnel..."
+                sh """
                     docker rm -f ngrok 2>/dev/null || true
 
-                    # Start fresh ngrok container
                     docker run -d --name ngrok \
-                    --link nextjs-app:http \
-                    -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                    wernight/ngrok ngrok http nextjs-app:3000
-                '''
-                sh 'sleep 8'
+                        --link nextjs-app:http \
+                        -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                        wernight/ngrok ngrok http nextjs-app:3000
+                """
+
+                sleep 8
             }
         }
 
@@ -95,8 +97,7 @@ pipeline {
                     docker exec ngrok curl -s http://localhost:4040/api/tunnels | \
                     grep -o '"public_url":"https://[^"]*"' | \
                     head -1 | \
-                    cut -d'"' -f4 || \
-                    echo "Run manually: docker exec ngrok curl http://localhost:4040/api/tunnels"
+                    cut -d'"' -f4
                 '''
             }
         }
@@ -105,13 +106,13 @@ pipeline {
     post {
         success {
             echo "✅ Pipeline finished successfully!"
-            // echo "🌐 Check ngrok dashboard: http://localhost:4040"
-            // echo "📱 Your app is now public via ngrok!"
         }
         failure {
-            echo "❌ Pipeline failed."
-            // sh 'docker logs nextjs-app 2>/dev/null || echo "No app logs"'
-            // sh 'docker logs ngrok 2>/dev/null || echo "No ngrok logs"'
+            echo "❌ Pipeline failed!"
+            echo "📄 App logs:"
+            sh "docker logs nextjs-app 2>/dev/null || true"
+            echo "📄 ngrok logs:"
+            sh "docker logs ngrok 2>/dev/null || true"
         }
     }
 }
