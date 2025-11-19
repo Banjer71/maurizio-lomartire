@@ -8,13 +8,14 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                echo "📥 Code already checked out by Jenkins"
-                sh 'ls -la'
-                sh 'cat Dockerfile'
-            }
-        }
+        //this stage can be removed after the first good installation
+        // stage('Checkout') {
+        //     steps {
+        //         echo "📥 Code already checked out by Jenkins"
+        //         sh 'ls -la'
+        //         sh 'cat Dockerfile'
+        //     }
+        // }
 
         stage('Build Docker Image') {
             steps {
@@ -23,20 +24,20 @@ pipeline {
             }
         }
 
-        stage('Test Image') {
-            steps {
-                echo "🧪 Verifying image was built..."
-                sh 'docker images | grep maurizio-lomartire || echo "❌ Image not found!"'
-            }
-        }
+        // stage('Test Image') {
+        //     steps {
+        //         echo "🧪 Verifying image was built..."
+        //         sh 'docker images | grep maurizio-lomartire || echo "❌ Image not found!"'
+        //     }
+        // }
 
-        stage('Debug Credentials') {
-            steps {
-                echo "🔍 Testing Docker credentials..."
-                sh 'echo "Username: $DOCKER_HUB_CREDENTIALS_USR"'
-                sh 'echo "Password length: $(echo $DOCKER_HUB_CREDENTIALS_PSW | wc -c)"'
-            }
-        }
+        // stage('Debug Credentials') {
+        //     steps {
+        //         echo "🔍 Testing Docker credentials..."
+        //         sh 'echo "Username: $DOCKER_HUB_CREDENTIALS_USR"'
+        //         sh 'echo "Password length: $(echo $DOCKER_HUB_CREDENTIALS_PSW | wc -c)"'
+        //     }
+        // }
 
         stage('Push Docker Image') {
             steps {
@@ -104,13 +105,13 @@ pipeline {
     post {
         success {
             echo "✅ Pipeline finished successfully!"
-            echo "🌐 Check ngrok dashboard: http://localhost:4040"
-            echo "📱 Your app is now public via ngrok!"
+            // echo "🌐 Check ngrok dashboard: http://localhost:4040"
+            // echo "📱 Your app is now public via ngrok!"
         }
         failure {
             echo "❌ Pipeline failed."
-            sh 'docker logs nextjs-app 2>/dev/null || echo "No app logs"'
-            sh 'docker logs ngrok 2>/dev/null || echo "No ngrok logs"'
+            // sh 'docker logs nextjs-app 2>/dev/null || echo "No app logs"'
+            // sh 'docker logs ngrok 2>/dev/null || echo "No ngrok logs"'
         }
     }
 }
