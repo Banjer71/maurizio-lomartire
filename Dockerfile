@@ -13,10 +13,10 @@ COPY package*.json ./
 COPY . .
 
 # Build the Next.js app
-# RUN npm run build
+RUN npm run build
 
 # Expose port
-# EXPOSE 3000
+EXPOSE 3000
 
 # Start the application
-# CMD ["npm", "start"]
+CMD ["npm", "start"]
