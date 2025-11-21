@@ -96,7 +96,8 @@ pipeline {
                     docker run -d --name ngrok \
                         --link nextjs-app:http \
                         -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                        wernight/ngrok ngrok http nextjs-app:3000
+                        ngrok/ngrok:latest \
+                        http http nextjs-app:3000
                 """
 <<<<<<< HEAD
 
