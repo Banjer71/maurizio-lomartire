@@ -20,7 +20,7 @@ pipeline {
                 echo "📥 Checking out branch: ${params.BRANCH}"
                 checkout([$class: 'GitSCM',
                     branches: [[name: "*/${params.BRANCH}"]],
-                    userRemoteConfigs: [[url: 'git@github.com:Banjer71/maurizio-lomartire.git']]
+                    userRemoteConfigs: [[url: 'https://github.com/Banjer71/maurizio-lomartire.git']]
                 ])
             }
         }
