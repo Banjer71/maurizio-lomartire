@@ -93,11 +93,13 @@ pipeline {
                 sh """
                     docker rm -f ngrok 2>/dev/null || true
 
-                    docker run -d --name ngrok \
-                        --link nextjs-app:http \
-                        -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                        ngrok/ngrok:latest \
-                        http http nextjs-app:3000
+                    docker run -d \
+                    --name ngrok \
+                    --network host \
+                    -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
+                    ngrok/ngrok:latest \
+                    http http://localhost:3000
+
                 """
 <<<<<<< HEAD
 
