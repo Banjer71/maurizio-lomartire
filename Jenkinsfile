@@ -65,36 +65,31 @@ pipeline {
         }
 
         stage('Start ngrok') {
-            steps {
-                echo '🌐 Starting ngrok tunnel...'
-                sh '''
-                    # Kill any ngrok process running on host
-                    pkill ngrok || true
-                    
-                    # Remove old container
-                    docker rm -f ngrok || true
-                    
-                    # Start ngrok container
-                    docker run -d --name ngrok --network host \
-                        -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
-                        ngrok/ngrok:latest http http://localhost:3000 --web-addr=4041
-                '''
-                sleep 10
-            }
-        }
+    steps {
+        echo '🌐 Starting ngrok tunnel...'
+        sh '''
+            pkill ngrok || true
+            docker rm -f ngrok || true
+            docker run -d --name ngrok --network host \
+                -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                ngrok/ngrok:latest http --web-addr=0.0.0.0:4041 http://localhost:3000
+        '''
+        sleep 10
+    }
+}
 
         stage('Get ngrok URL') {
-            steps {
-                echo '🌐 Fetching public ngrok URL...'
-                script {
-                    def ngrokUrl = sh(
-                        script: "docker exec ngrok curl -s http://localhost:4041/api/tunnels | grep -o '\"public_url\":\"https://[^\"]*\"' | head -1 | cut -d'\"' -f4",
-                        returnStdout: true
-                    ).trim()
-                    echo "🔗 Your app is available at: ${ngrokUrl}"
-                }
-            }
+    steps {
+        echo '🌐 Fetching public ngrok URL...'
+        script {
+            def ngrokUrl = sh(
+                script: "docker exec ngrok curl -s http://localhost:4041/api/tunnels | grep -o '\"public_url\":\"https://[^\"]*\"' | head -1 | cut -d'\"' -f4",
+                returnStdout: true
+            ).trim()
+            echo "🔗 Your app is available at: ${ngrokUrl}"
         }
+    }
+}
     }
 
     post {
