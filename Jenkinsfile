@@ -85,13 +85,13 @@ pipeline {
                 echo '🌐 Fetching public ngrok URL...'
                 script {
                     def ngrokUrl = sh(
-                        script: "curl -s http://localhost:4040/api/tunnels | grep -o '\"public_url\":\"https://[^\"]*\"' | head -1 | cut -d'\"' -f4",
+                        script: "docker exec ngrok curl -s http://localhost:4040/api/tunnels | grep -o '\"public_url\":\"https://[^\"]*\"' | head -1 | cut -d'\"' -f4",
                         returnStdout: true
                     ).trim()
                     echo "🔗 Your app is available at: ${ngrokUrl}"
                 }
             }
-        }
+}
     }
 
     post {
