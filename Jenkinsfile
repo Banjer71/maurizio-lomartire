@@ -65,20 +65,23 @@ pipeline {
         }
 
         stage('Start ngrok') {
-            steps {
-                echo "🌐 Starting ngrok tunnel..."
-                sh """
-                docker rm -f ngrok || true
-                docker run -d \
-                    --name ngrok \
-                    --network host \
-                    -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
-                    ngrok/ngrok:latest \
-                    http http://localhost:3000
-                """
-                sleep 8
-            }
-        }
+    steps {
+        echo '🌐 Starting ngrok tunnel...'
+        sh '''
+            # Kill any ngrok process running on host
+            pkill ngrok || true
+            
+            # Remove old container
+            docker rm -f ngrok || true
+            
+            # Start ngrok container
+            docker run -d --name ngrok --network host \
+                -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
+                ngrok/ngrok:latest http http://localhost:3000
+        '''
+        sleep 10
+    }
+}
 
         stage('Get ngrok URL') {
             steps {
