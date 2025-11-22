@@ -68,15 +68,13 @@ pipeline {
             steps {
                 echo "🌐 Starting ngrok tunnel..."
                 sh """
-                    docker rm -f ngrok 2>/dev/null || true
-
-                    docker run -d \
+                docker rm -f ngrok || true
+                docker run -d \
                     --name ngrok \
                     --network host \
                     -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
                     ngrok/ngrok:latest \
                     http http://localhost:3000
-
                 """
                 sleep 8
             }
