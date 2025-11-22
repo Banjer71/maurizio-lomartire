@@ -77,7 +77,7 @@ pipeline {
                     # Start ngrok container
                     docker run -d --name ngrok --network host \
                         -e NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN} \
-                        ngrok/ngrok:latest http http://localhost:3000
+                        ngrok/ngrok:latest http http://localhost:3000 --web-addr=4041
                 '''
                 sleep 10
             }
