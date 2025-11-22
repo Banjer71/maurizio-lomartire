@@ -72,7 +72,7 @@ pipeline {
                 echo '💡 Your webhook ngrok tunnel will automatically point to the updated app'
                 echo '📝 No action needed - just keep your terminal ngrok running'
             }
-        }
+}
     }
 
     post {
