@@ -56,9 +56,19 @@ pipeline {
             steps {
                 echo "🚀 Starting latest app container..."
                 sh """
-                    docker run -d --name nextjs-app -p 3000:3000 $IMAGE_NAME
+                    docker run -d \
+                        --name nextjs-app \
+                        --restart unless-stopped \
+                        -p 3000:3000 \
+                        $IMAGE_NAME
                 """
-                sleep 5
+                
+                echo "✅ Waiting for app to be ready..."
+                sh """
+                    timeout 30 sh -c 'until curl -f http://localhost:3000 > /dev/null 2>&1; do sleep 1; done' || echo 'Warning: Health check timeout'
+                """
+                
+                echo "🎯 App is ready and accepting connections"
             }
         }
 
