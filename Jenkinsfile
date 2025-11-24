@@ -52,7 +52,6 @@ pipeline {
             }
         }
         
-
         stage('Run App Container') {
             steps {
                 echo "🚀 Starting latest app container..."
