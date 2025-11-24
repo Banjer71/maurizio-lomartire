@@ -8,7 +8,6 @@ pipeline {
     environment {
         NODE_ENV = 'production'
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-creds')
-        NGROK_AUTH_TOKEN = credentials('ngrok-auth-token')
         IMAGE_NAME = "maurizio-lomartire"
         FULL_IMAGE = "${DOCKER_HUB_CREDENTIALS_USR}/maurizio-lomartire:latest"
     }
@@ -49,7 +48,6 @@ pipeline {
             steps {
                 sh '''
                     docker rm -f nextjs-app 2>/dev/null || true
-                    docker rm -f ngrok 2>/dev/null || true
                 '''
             }
         }
@@ -64,70 +62,27 @@ pipeline {
             }
         }
 
-        stage('Start ngrok') {
+        stage('Deployment Info') {
             steps {
-                echo '🌐 Starting ngrok tunnel...'
-                sh '''
-                    pkill ngrok || true
-                    docker rm -f ngrok || true
-                    docker run -d --name ngrok \
-                        --net=container:nextjs-app \
-                        -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                        ngrok/ngrok:latest http 3000
-                '''
-                sleep 10
-            }
-}
-
-        stage('Get ngrok URL') {
-    steps {
-        echo '🌐 Fetching public ngrok URL...'
-        script {
-            // First check if container is running
-            def containerRunning = sh(
-                script: "docker inspect -f '{{.State.Running}}' ngrok",
-                returnStdout: true
-            ).trim()
-            
-            echo "📊 ngrok container running: ${containerRunning}"
-            
-            if (containerRunning == 'true') {
-                // Get the URL from ngrok's own API endpoint
-                def ngrokUrl = sh(
-                    script: """
-                        sleep 5
-                        docker exec ngrok wget -qO- http://127.0.0.1:4040/api/tunnels | \
-                        grep -o '"public_url":"https://[^"]*"' | \
-                        head -1 | \
-                        cut -d'"' -f4
-                    """,
-                    returnStdout: true
-                ).trim()
-                
-                if (ngrokUrl) {
-                    echo "🔗 Your app is available at: ${ngrokUrl}"
-                    echo "🔗 Share this URL with your colleagues: ${ngrokUrl}"
-                } else {
-                    echo "⚠️ Could not retrieve ngrok URL"
-                    sh "docker logs ngrok"
-                }
-            } else {
-                echo "❌ ngrok container is not running!"
-                sh "docker logs ngrok"
+                echo '✅ Application deployed successfully!'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '🔗 Local access: http://localhost:3000'
+                echo '🌐 Public access: Use your existing ngrok tunnel'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '💡 Your webhook ngrok tunnel will automatically point to the updated app'
+                echo '📝 No action needed - just keep your terminal ngrok running'
             }
         }
-    }
-}
     }
 
     post {
         success {
             echo "✅ Pipeline finished successfully!"
+            echo "🎯 App is running on port 3000"
         }
         failure {
             echo "❌ Pipeline failed!"
             sh "docker logs nextjs-app 2>/dev/null || true"
-            sh "docker logs ngrok 2>/dev/null || true"
         }
     }
 }
