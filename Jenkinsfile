@@ -13,7 +13,7 @@ pipeline {
     }
 
     stages {
-        
+
         stage('Checkout') {
             steps {
                 echo "📥 Checking out branch: ${params.BRANCH}"
@@ -51,6 +51,7 @@ pipeline {
                 '''
             }
         }
+        
 
         stage('Run App Container') {
             steps {
