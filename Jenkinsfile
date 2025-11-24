@@ -65,28 +65,56 @@ pipeline {
         }
 
         stage('Start ngrok') {
-    steps {
-        echo '🌐 Starting ngrok tunnel...'
-        sh '''
-            pkill ngrok || true
-            docker rm -f ngrok || true
-            docker run -d --name ngrok --network host \
-                -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
-                ngrok/ngrok:latest http --web-addr=0.0.0.0:4041 http://localhost:3000
-        '''
-        sleep 10
-    }
+            steps {
+                echo '🌐 Starting ngrok tunnel...'
+                sh '''
+                    pkill ngrok || true
+                    docker rm -f ngrok || true
+                    docker run -d --name ngrok \
+                        --net=container:nextjs-app \
+                        -e NGROK_AUTHTOKEN=$NGROK_AUTH_TOKEN \
+                        ngrok/ngrok:latest http 3000
+                '''
+                sleep 10
+            }
 }
 
         stage('Get ngrok URL') {
     steps {
         echo '🌐 Fetching public ngrok URL...'
         script {
-            def ngrokUrl = sh(
-                script: "docker exec ngrok curl -s http://localhost:4041/api/tunnels | grep -o '\"public_url\":\"https://[^\"]*\"' | head -1 | cut -d'\"' -f4",
+            // First check if container is running
+            def containerRunning = sh(
+                script: "docker inspect -f '{{.State.Running}}' ngrok",
                 returnStdout: true
             ).trim()
-            echo "🔗 Your app is available at: ${ngrokUrl}"
+            
+            echo "📊 ngrok container running: ${containerRunning}"
+            
+            if (containerRunning == 'true') {
+                // Get the URL from ngrok's own API endpoint
+                def ngrokUrl = sh(
+                    script: """
+                        sleep 5
+                        docker exec ngrok wget -qO- http://127.0.0.1:4040/api/tunnels | \
+                        grep -o '"public_url":"https://[^"]*"' | \
+                        head -1 | \
+                        cut -d'"' -f4
+                    """,
+                    returnStdout: true
+                ).trim()
+                
+                if (ngrokUrl) {
+                    echo "🔗 Your app is available at: ${ngrokUrl}"
+                    echo "🔗 Share this URL with your colleagues: ${ngrokUrl}"
+                } else {
+                    echo "⚠️ Could not retrieve ngrok URL"
+                    sh "docker logs ngrok"
+                }
+            } else {
+                echo "❌ ngrok container is not running!"
+                sh "docker logs ngrok"
+            }
         }
     }
 }
